@@ -36,11 +36,13 @@ let sunExplosionTime = 0;
 const originalBloomStrength = 0.45;
 let extinctionText;
 
-// --- MODIFIED: Laser Variables for Visual Effect ---
-let laserCore = null; // 밝은 중심부
-let laserGlow = null; // 외부 광선
-// ---
+let laserCore = null;
+let laserGlow = null;
 let heatingTarget = null;
+// --- NEW/MODIFIED: Sound variables ---
+let sunExplosionSound = null;
+let planetExplosionSound = null; // 행성 폭발음 변수 추가
+// ---
 
 let pixR = window.devicePixelRatio ? window.devicePixelRatio : 1;
 let cubes = [];
@@ -206,6 +208,29 @@ else
 	{
 		camera = new t.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
 		camera.position.set(0, 0, 800);
+
+		// --- MODIFIED: Audio Setup ---
+		const listener = new t.AudioListener();
+		camera.add(listener);
+		const audioLoader = new t.AudioLoader();
+
+		// 태양 폭발음 로드
+		audioLoader.load( 'sounds/explosion.mp3', function( buffer ) {
+			sunExplosionSound = new t.Audio( listener );
+			sunExplosionSound.setBuffer( buffer );
+			sunExplosionSound.setLoop( false );
+			sunExplosionSound.setVolume( 0.7 );
+		});
+
+		// 행성 폭발음 로드
+		audioLoader.load( 'sounds/medium_explosion.mp3', function( buffer ) {
+			planetExplosionSound = new t.Audio( listener );
+			planetExplosionSound.setBuffer( buffer );
+			planetExplosionSound.setLoop( false );
+			planetExplosionSound.setVolume( 0.5 );
+		});
+		// --- END Audio Setup ---
+
 		sceneOffsetTarget = { x: -window.screenX, y: -window.screenY };
 		sceneOffset = { x: -window.screenX, y: -window.screenY };
 		fixedTheta = Math.PI / 4;
@@ -237,31 +262,27 @@ else
 		world = new t.Object3D();
 		scene.add(world);
 
-		// --- MODIFIED: Create a composite laser beam (core + glow) ---
 		const laserGeometry = new THREE.CylinderGeometry(1, 1, 1, 32);
 		laserGeometry.translate(0, 0.5, 0);
 
-		// 1. 외부 광선 (Glow)
 		const glowMaterial = new THREE.MeshBasicMaterial({
 			color: 0xff4500,
 			transparent: true,
 			opacity: 0.4,
-			blending: THREE.AdditiveBlending // 빛이 섞이는 느낌을 강화
+			blending: THREE.AdditiveBlending
 		});
 		laserGlow = new THREE.Mesh(laserGeometry, glowMaterial);
-		laserGlow.scale.set(0.8, 1, 0.8); // 더 넓게 퍼지도록 설정
+		laserGlow.scale.set(0.8, 1, 0.8);
 		laserGlow.visible = false;
 		scene.add(laserGlow);
 
-		// 2. 밝은 중심부 (Core)
 		const coreMaterial = new THREE.MeshBasicMaterial({
-			color: 0xffe6bf // 흰색에 가까운 밝은 주황색
+			color: 0xffe6bf
 		});
 		laserCore = new THREE.Mesh(laserGeometry, coreMaterial);
-		laserCore.scale.set(0.2, 1, 0.2); // 가늘게 설정
+		laserCore.scale.set(0.2, 1, 0.2);
 		laserCore.visible = false;
 		scene.add(laserCore);
-		// --- END Laser Creation ---
 
 		const renderScene = new RenderPass(scene, camera);
 		const bloomPass = new UnrealBloomPass( new t.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85 );
@@ -340,7 +361,6 @@ else
 		button.onmouseout = () => { button.style.backgroundColor = 'rgba(0,0,0,0.5)'; button.style.color = color; };
 	}
 
-	// --- MODIFIED: Update both laser components ---
 	function updateLaserBeam(targetPoint) {
 		if (!targetPoint) return;
 		laserCore.visible = true;
@@ -349,11 +369,9 @@ else
 		const startPoint = camera.position.clone();
 		const distance = startPoint.distanceTo(targetPoint);
 
-		// Update both core and glow beams
 		[laserCore, laserGlow].forEach(beam => {
 			beam.position.copy(startPoint);
 			beam.lookAt(targetPoint);
-			// beam.scale.y is now used for length
 			beam.scale.y = distance;
 		});
 	}
@@ -362,7 +380,6 @@ else
 		if (laserCore) laserCore.visible = false;
 		if (laserGlow) laserGlow.visible = false;
 	}
-	// ---
 
 	function startObjectHeating(object) {
 		if (heatingObjects.some(p => p.object === object)) return;
@@ -390,7 +407,6 @@ else
 	}
 
 	function updateHeatingObjects(deltaTime) {
-		// 가열 시간을 2초에서 1초로 줄여 난이도 하향 조정
 		const heatingDuration = 1.0;
 		const explosionDelay = 0.5;
 
@@ -420,6 +436,13 @@ else
 
 	function triggerSunExplosion() {
 		if (isSunExploding) return;
+
+		// --- MODIFIED: More robust sound playing ---
+		if (sunExplosionSound) {
+			if (sunExplosionSound.isPlaying) sunExplosionSound.stop();
+			sunExplosionSound.play();
+		}
+
 		isSunExploding = true;
 		sunExplosionTime = 0;
 		extinctionText.style.opacity = '1';
@@ -428,7 +451,14 @@ else
 		createExplosionParticles(sun, 20000, 2.5);
 	}
 
+	// --- MODIFIED: Added sound playback ---
 	function triggerPlanetExplosion(planet) {
+		// Play planet explosion sound
+		if (planetExplosionSound) {
+			if (planetExplosionSound.isPlaying) planetExplosionSound.stop();
+			planetExplosionSound.play();
+		}
+
 		planet.visible = false;
 		if (planet.userData.moon) planet.userData.moon.visible = false;
 		const orbit = cubes.find(c => c.userData.isOrbitFor === planet);
