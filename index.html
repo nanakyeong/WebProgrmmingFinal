@@ -1,20 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>3d example using three.js and multiple windows</title>
-	<script type="text/javascript" src="three.r124.min.js"></script>
-	<style type="text/css">
-
-		*
-		{
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Solar System with Effects</title>
+	<style>
+		body {
 			margin: 0;
 			padding: 0;
+			overflow: hidden; /* 스크롤바 제거 */
 		}
-
+		canvas {
+			display: block;
+		}
 	</style>
+
+	<script type="importmap">
+		{
+            "imports": {
+                "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+                "three/examples/jsm/postprocessing/EffectComposer.js": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/EffectComposer.js",
+                "three/examples/jsm/postprocessing/RenderPass.js": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/RenderPass.js",
+                "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/UnrealBloomPass.js",
+                "three/examples/jsm/postprocessing/OutputPass.js": "https://unpkg.com/three@0.165.0/examples/jsm/postprocessing/OutputPass.js"
+            }
+        }
+	</script>
 </head>
 <body>
-
-	<script type="module" src="main.js"></script>
+<!-- main.js는 그대로 로드합니다 -->
+<script type="module" src="main.js"></script>
 </body>
 </html>
